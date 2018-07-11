@@ -68,7 +68,7 @@ def main(args=sys.argv[1:]):
                 old_start_date = _d
 
     delta = new_start_date - old_start_date
-    delta = timedelta(days=delta.days)
+    delta = timedelta(days=delta.days + 1)
     logger.info("Last years course started {}".format(utc_to_local(old_start_date)))
     logger.info("New course will be {} days later.".format(delta.days))
 
