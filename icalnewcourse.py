@@ -22,9 +22,13 @@ def utc_to_local(utc_dt):
 
 def main(args=sys.argv[1:]):
     """
+    Takes an old iCal calendar file, and sets a new starting date.
     """
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("inputfile", help="iCal .ics file from which new schedule will be produced.", type=str)
+    parser.add_argument("startdate", help="New course starting date in DD.MM.YYYY format.", type=str)
+    parser.add_argument("outputfile", help="Filename of output iCal .ics file.", type=str, nargs='?', default=None)
     parser.add_argument("-v", "--verbosity", action='count',
                         help="increase output verbosity",
                         default=0)
@@ -37,10 +41,19 @@ def main(args=sys.argv[1:]):
     else:
         logging.basicConfig()
 
-    fn_in = "test.ics"
-    fn_out = "out.ics"
+    fn_in = parsed_args.inputfile
+    if parsed_args.outputfile:
+        fn_out = parsed_args.outputfile
+    else:
+        fn_out = "new.ics"
 
-    new_start_date = datetime(2018, 11, 19, 9, 0, 0, tzinfo=local_tz)
+    if parsed_args.startdate:
+        new_start_date = datetime.strptime(parsed_args.startdate, '%d.%m.%Y')
+        new_start_date = new_start_date.replace(tzinfo=local_tz)
+        print(new_start_date)
+    else:
+        new_start_date = datetime(2018, 11, 19, 9, 0, 0, tzinfo=local_tz)
+
     old_start_date = new_start_date
 
     with open(fn_in, 'rb') as g:

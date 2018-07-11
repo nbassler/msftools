@@ -1,9 +1,10 @@
 import sys
 import logging
 import argparse
-import numpy as np
 import datetime
+import pytz
 
+import numpy as np
 from icalendar import Calendar
 
 from reportlab.pdfgen import canvas
@@ -12,9 +13,19 @@ from reportlab.lib.pagesizes import A4, landscape
 
 logger = logging.getLogger(__name__)
 
+local_tz = pytz.timezone('Europe/Stockholm')  # beware of daylight saving
+
+
+def utc_to_local(utc_dt):
+    local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
+    return local_tz.normalize(local_dt)  # .normalize might be unnecessary
+
+
 def main(args=sys.argv[1:]):
     """
-    Foobar
+    Read an iCal calendar file and convert it to a PDF which is ready to be handed out to students.
+
+    Note: locations should be a 3-letter code which is elaborated in the calendar description.
     """
 
     parser = argparse.ArgumentParser()
@@ -86,13 +97,16 @@ def main(args=sys.argv[1:]):
     for i, idx in enumerate(idxarr):
         _c = events[idx]
         _name = _c['SUMMARY']
-        _start_date = _c['DTSTART'].dt.strftime("%a, %d %b")
-        _start_time = _c['DTSTART'].dt.strftime("%H:%M")
+
+        _dt = utc_to_local(_c['DTSTART'].dt)
+        _start_date = _dt.strftime("%a, %d %b")
+        _start_time = _dt.strftime("%H:%M")
 
         if "LOCATION" in _c:
             _location = _c['LOCATION']
         if "DTEND" in _c:
-            _stop_time = _c['DTEND'].dt.strftime("%H:%M")
+            _dt = utc_to_local(_c['DTEND'].dt)
+            _stop_time = _dt.strftime("%H:%M")
         else:
             _stop_time = None
 
@@ -116,7 +130,7 @@ def main(args=sys.argv[1:]):
             j = 0
             ypos = ymax - 40 - (j * 14)
 
-        c.drawString(xmin + xoff_date , ypos, _start_date)
+        c.drawString(xmin + xoff_date, ypos, _start_date)
         c.drawString(xmin + xoff_start_time, ypos, _start_time)
         if _stop_time:
             c.drawString(xmin + xoff_stop_time, ypos, _stop_time)
