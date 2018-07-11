@@ -4,7 +4,6 @@ import argparse
 import pytz  # timezones
 
 from icalendar import Calendar
-from icalendar import Event
 from datetime import datetime
 from datetime import timedelta
 
@@ -89,6 +88,7 @@ def main(args=sys.argv[1:]):
     with open(fn_out, 'wb') as f:
         f.write(gcal.to_ical())
     logger.info("Wrote {}".format(fn_out))
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

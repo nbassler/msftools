@@ -148,7 +148,6 @@ def main(args=sys.argv[1:]):
         else:
             c.drawString(xmin + xoff_name, ypos, _name)
 
-
         if _description:
             if len(_description) > maxchar_desc:
                 import textwrap
