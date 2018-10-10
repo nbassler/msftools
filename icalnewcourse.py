@@ -75,6 +75,17 @@ def main(args=sys.argv[1:]):
     logger.info("Course start: {}".format(utc_to_local(new)))
 
     for component in gcal.walk():
+        if component.name == "VCALENDAR":
+            _calname = component["X-WR-CALNAME"]
+            logger.info("_calname: {}".format(_calname))
+            _old_start_year = old_start_date.strftime("%Y")
+            _new_start_year = new_start_date.strftime("%Y")
+            logger.info("_old_start_year: {}".format(_old_start_year))
+            logger.info("_new_start_year: {}".format(_new_start_year))
+            if _old_start_year in _calname:
+                logger.info("Replacing year in calendar title ...")
+                component["X-WR-CALNAME"] = _calname.replace(_old_start_year, _new_start_year)
+
         if component.name == "VEVENT":
             logger.info("")
             logger.info("{}".format(component['summary']))
