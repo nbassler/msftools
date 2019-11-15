@@ -2,10 +2,18 @@ import sys
 import logging
 import argparse
 import datetime
+import pytz
 
 import xml.sax
 
 logger = logging.getLogger(__name__)
+
+local_tz = pytz.timezone('Europe/Stockholm')  # beware of daylight saving
+
+
+def utc_to_local(utc_dt):
+    local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
+    return local_tz.normalize(local_dt)  # .normalize might be unnecessary
 
 
 class Lesson():
@@ -68,11 +76,11 @@ class PlanHandler(xml.sax.ContentHandler):
             self.cl.description = content
         elif self.CurrentData == "start":
             self.cl.start = content
-            self.cl.dt_start = datetime.datetime.strptime(content, self._dt_str)
+            self.cl.dt_start = utc_to_local(datetime.datetime.strptime(content, self._dt_str))
             logger.debug(self.cl.dt_start.date(), self.cl.dt_start.time())
         elif self.CurrentData == "stop":
             self.cl.stop = content
-            self.cl.dt_stop = datetime.datetime.strptime(content, self._dt_str)
+            self.cl.dt_stop = utc_to_local(datetime.datetime.strptime(content, self._dt_str))
         elif self.CurrentData == "room":
             self.cl.room = content
         elif self.CurrentData == "teacher":
@@ -115,8 +123,8 @@ def main(args=sys.argv[1:]):
     for l in s:
         # print(l.start)
         if l.dt_start:
-            print("{}-{} {:50} {:20}".format(l.dt_start.strftime('%Y-%m-%d %a    %H:%S'),
-                                             l.dt_stop.strftime('%H:%S'),
+            print("{}-{} {:50} {:20}".format(l.dt_start.strftime('%Y-%m-%d %a    %H:%M'),
+                                             l.dt_stop.strftime('%H:%M'),
                                              l.name,
                                              l.teacher))
 
