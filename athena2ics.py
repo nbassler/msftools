@@ -1,6 +1,7 @@
 import sys
 import logging
 import argparse
+import datetime
 
 import xml.sax
 
@@ -8,30 +9,41 @@ logger = logging.getLogger(__name__)
 
 
 class Lesson():
+    """
+    Class which describes a single lesson.
+    """
+
     def __init__(self):
         self.name = ""
         self.description = ""
         self.start = ""
         self.stop = ""
+        self.dt_start = None  # for datetime objects
+        self.dt_stop = None
         self.room = ""
         self.teacher = ""
 
 
 class PlanHandler(xml.sax.ContentHandler):
+    """
+    How to parse the XML file exported from Athena.
+    """
+
     def __init__(self):
         self.CurrentData = ""
         self.skip = False
         self.lessons = []
-        self.cl = Lesson()  # current lesson
+        self.cl = None  # current lesson
+        self._dt_str = '%Y-%m-%dT%H:%M:%S'  # date time string format in XML file
 
     # Call when an element starts
     def startElement(self, tag, attributes):
         self.CurrentData = tag
         if tag == "lesson":
             self.cl = Lesson()
-            print("***** Lesson *****")
+            logger.debug("Found a new lesson")
         if tag == "custom":
-            print(attributes.items())
+            logger.debug(attributes.items())
             if "colName" in attributes:
                 self.CurrentData = attributes["colName"].lower()
         if tag == "objectives":
@@ -43,18 +55,6 @@ class PlanHandler(xml.sax.ContentHandler):
             self.skip = False
         if self.skip:
             return
-        # if self.CurrentData == "name":
-        #     print("Name:", self.name)
-        # elif self.CurrentData == "description":
-        #     print("Description:", self.description)
-        # elif self.CurrentData == "start":
-        #     print("Start:", self.start)
-        # elif self.CurrentData == "stop":
-        #     print("Stop:", self.stop)
-        # elif self.CurrentData == "room":
-        #     print("Room:", self.room)
-        # elif self.CurrentData == "teacher":
-        #     print("Teacher:", self.teacher)
         if tag == "lesson":  # end current lesson
             self.lessons.append(self.cl)
         self.CurrentData = ""
@@ -68,8 +68,11 @@ class PlanHandler(xml.sax.ContentHandler):
             self.cl.description = content
         elif self.CurrentData == "start":
             self.cl.start = content
+            self.cl.dt_start = datetime.datetime.strptime(content, self._dt_str)
+            logger.debug(self.cl.dt_start.date(), self.cl.dt_start.time())
         elif self.CurrentData == "stop":
             self.cl.stop = content
+            self.cl.dt_stop = datetime.datetime.strptime(content, self._dt_str)
         elif self.CurrentData == "room":
             self.cl.room = content
         elif self.CurrentData == "teacher":
@@ -77,7 +80,8 @@ class PlanHandler(xml.sax.ContentHandler):
 
 
 def main(args=sys.argv[1:]):
-    """ Main function
+    """
+    Main function
     """
     # parse arguments
     parser = argparse.ArgumentParser()
@@ -102,12 +106,19 @@ def main(args=sys.argv[1:]):
     # override the default ContextHandler
     handler = PlanHandler()
     parser.setContentHandler(handler)
-
     parser.parse(inp)
 
-    print("\n\n\n")
-    for l in handler.lessons:
-        print(l.name)
+    # sort by date
+    s = sorted(handler.lessons, key=lambda x: getattr(x, 'start'))
+
+    # pretty print to stdout
+    for l in s:
+        # print(l.start)
+        if l.dt_start:
+            print("{}-{} {:50} {:20}".format(l.dt_start.strftime('%Y-%m-%d %a    %H:%S'),
+                                             l.dt_stop.strftime('%H:%S'),
+                                             l.name,
+                                             l.teacher))
 
 
 if __name__ == '__main__':
