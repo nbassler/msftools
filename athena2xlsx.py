@@ -32,6 +32,14 @@ class Lesson():
         self.room = ""
         self.teacher = ""
 
+    def print(self):
+        print("Name: {}".format(self.name))
+        print("Desc: {}".format(self.description))
+        print("Start: {}".format(self.dt_start))
+        print("Stop: {}".format(self.dt_stop))
+        print("Room: {}".format(self.room))
+        print("Teacher:".format(self.teacher))
+
 
 class StdoutWriter():
     """
@@ -50,15 +58,24 @@ class StdoutWriter():
         iw_saved = 1
         for l in lessons:
             # print(l.start)
-            iw = l.dt_start.isoweekday()
+            if l.dt_start:
+                iw = l.dt_start.isoweekday()
+            else:
+                iw = 1
             # add a newline if new week:
             if iw < iw_saved:
                 print("")
             iw_saved = iw
 
-            if l.dt_start:
+            if l.dt_start and l.dt_stop:  # TODO: print also if only one of these are set
                 print("{}-{} {:55} {:30} {:20}".format(l.dt_start.strftime('%Y-%m-%d %a    %H:%M'),
                                                        l.dt_stop.strftime('%H:%M'),
+                                                       l.name,
+                                                       l.teacher,
+                                                       l.room))
+            else:
+                print("{}-{} {:55} {:30} {:20}".format("",
+                                                       "",
                                                        l.name,
                                                        l.teacher,
                                                        l.room))
@@ -110,14 +127,19 @@ class ExcelWriter():
         row += 1
 
         for l in lessons:
-            iw = l.dt_start.isoweekday()
+            if l.dt_start:
+                iw = l.dt_start.isoweekday()
+            else:
+                iw = 1
             if iw < iw_saved:
                 row += 1
             iw_saved = iw
-            self.ws.write(row, col_date, l.dt_start.strftime('%Y-%m-%d'),  self.date_format)
-            self.ws.write(row, col_week, l.dt_start.strftime('%a'))
-            self.ws.write(row, col_start, l.dt_start.strftime('%H:%M'))
-            self.ws.write(row, col_stop, l.dt_stop.strftime('%H:%M'))
+            if l.dt_start:
+                self.ws.write(row, col_date, l.dt_start.strftime('%Y-%m-%d'),  self.date_format)
+                self.ws.write(row, col_week, l.dt_start.strftime('%a'))
+                self.ws.write(row, col_start, l.dt_start.strftime('%H:%M'))
+            if l.dt_stop:
+                self.ws.write(row, col_stop, l.dt_stop.strftime('%H:%M'))
             self.ws.write(row, col_name, l.name)
             self.ws.write(row, col_teacher, l.teacher)
             self.ws.write(row, col_room, l.room)
