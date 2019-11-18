@@ -36,6 +36,9 @@ class Lesson():
 class StdoutWriter():
     """
     Writes lessons to standard out.
+
+    You can pretty print with a2ps:
+    athena2ics.py input.xml  | a2ps -1 -r -l144 -o output.ps
     """
 
     def __init__(self, lessons):
