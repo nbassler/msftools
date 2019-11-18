@@ -1,3 +1,4 @@
+import os
 import sys
 import logging
 import argparse
@@ -30,6 +31,99 @@ class Lesson():
         self.dt_stop = None
         self.room = ""
         self.teacher = ""
+
+
+class StdoutWriter():
+    """
+    Writes lessons to standard out.
+    """
+
+    def __init__(self, lessons):
+        """
+        Writes lessons to standard out.
+        """
+
+        # pretty print to stdout
+        iw_saved = 1
+        for l in lessons:
+            # print(l.start)
+            iw = l.dt_start.isoweekday()
+            # add a newline if new week:
+            if iw < iw_saved:
+                print("")
+            iw_saved = iw
+
+            if l.dt_start:
+                print("{}-{} {:55} {:30} {:20}".format(l.dt_start.strftime('%Y-%m-%d %a    %H:%M'),
+                                                       l.dt_stop.strftime('%H:%M'),
+                                                       l.name,
+                                                       l.teacher,
+                                                       l.room))
+
+
+class ExcelWriter():
+    """
+    Class for making excel files
+    """
+
+    def __init__(self, filename, lessons):
+        """
+        """
+        import xlsxwriter
+
+        self.wb = xlsxwriter.Workbook(filename)
+        self.bold = self.wb.add_format({'bold': True})
+        self.date_format = self.wb.add_format({'num_format': 'mmmm d yyyy'})
+        self.ws = self.wb.add_worksheet()
+        self.write_lessons(lessons)
+        self.save()
+
+    def write_lessons(self, lessons):
+        """
+        Write lessons to open worksheet.
+        """
+
+        row = 0
+        col = 0
+
+        col_date = col
+        col_week = col + 1
+        col_start = col + 2
+        col_stop = col + 3
+        col_name = col + 4
+        col_teacher = col + 5
+        col_room = col + 6
+
+        iw_saved = 1
+
+        self.ws.write(row, col_date, "Date", self.bold)
+        self.ws.write(row, col_week, "Weekday", self.bold)
+        self.ws.write(row, col_start, "Start", self.bold)
+        self.ws.write(row, col_stop, "Stop", self.bold)
+        self.ws.write(row, col_name, "Title", self.bold)
+        self.ws.write(row, col_teacher, "Teacher", self.bold)
+        self.ws.write(row, col_room, "Location", self.bold)
+
+        row += 1
+
+        for l in lessons:
+            iw = l.dt_start.isoweekday()
+            if iw < iw_saved:
+                row += 1
+            iw_saved = iw
+            self.ws.write(row, col_date, l.dt_start.strftime('%Y-%m-%d'),  self.date_format)
+            self.ws.write(row, col_week, l.dt_start.strftime('%a'))
+            self.ws.write(row, col_start, l.dt_start.strftime('%H:%M'))
+            self.ws.write(row, col_stop, l.dt_stop.strftime('%H:%M'))
+            self.ws.write(row, col_name, l.name)
+            self.ws.write(row, col_teacher, l.teacher)
+            self.ws.write(row, col_room, l.room)
+            row += 1
+
+    def save(self):
+        """
+        """
+        self.wb.close()
 
 
 class PlanHandler(xml.sax.ContentHandler):
@@ -81,7 +175,7 @@ class PlanHandler(xml.sax.ContentHandler):
         elif self.CurrentData == "stop":
             self.cl.stop = content
             self.cl.dt_stop = utc_to_local(datetime.datetime.strptime(content, self._dt_str))
-        elif self.CurrentData == "room":
+        elif self.CurrentData == "room" or self.CurrentData == "location":  # are made lower case before
             self.cl.room = content
         elif self.CurrentData == "teacher":
             self.cl.teacher = content
@@ -93,8 +187,11 @@ def main(args=sys.argv[1:]):
     """
     # parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("fn_input", help="input filename", type=str)
+    parser.add_argument("infile", help="input XML filename, exported from itslearning.com -> plan -> import/export",
+                        type=str)
     parser.add_argument("-v", "--verbosity", action='count', help="increase output verbosity", default=0)
+    parser.add_argument('-o', '--outfile', nargs='?', type=str,
+                        help='output filename, if suffix is .xlsx then output as spreadsheet')
 
     parsed_args = parser.parse_args(args)
 
@@ -105,7 +202,12 @@ def main(args=sys.argv[1:]):
     else:
         logging.basicConfig()
 
-    inp = parsed_args.fn_input
+    inp = parsed_args.infile
+    oup = parsed_args.outfile
+    if oup:
+        oup_ext = os.path.splitext(oup)[-1].lower()
+    else:
+        oup_ext = ""
 
     parser = xml.sax.make_parser()
     # turn off namepsaces
@@ -119,14 +221,10 @@ def main(args=sys.argv[1:]):
     # sort by date
     s = sorted(handler.lessons, key=lambda x: getattr(x, 'start'))
 
-    # pretty print to stdout
-    for l in s:
-        # print(l.start)
-        if l.dt_start:
-            print("{}-{} {:50} {:20}".format(l.dt_start.strftime('%Y-%m-%d %a    %H:%M'),
-                                             l.dt_stop.strftime('%H:%M'),
-                                             l.name,
-                                             l.teacher))
+    if oup_ext == ".xlsx":
+        ExcelWriter(oup, s)
+
+    StdoutWriter(s)
 
 
 if __name__ == '__main__':
