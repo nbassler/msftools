@@ -46,7 +46,7 @@ for degs in l_degs:
     s = np.zeros((len(bs), len(degs)))
 
     # print the degrees
-    print("   $\\theta [^\circ]\\rightarrow$", end=' & ')
+    print("   $\\theta [^\\circ]\\rightarrow$", end=' & ')
     for j, d in enumerate(degs):
         print("{:6.1f}$^\\circ$".format(d), end='')
         if j >= len(degs) - 1:
