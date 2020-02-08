@@ -44,9 +44,6 @@ class Lesson():
 class StdoutWriter():
     """
     Writes lessons to standard out.
-
-    You can pretty print with a2ps:
-    athena2ics.py input.xml  | a2ps -1 -r -l144 -o output.ps
     """
 
     def __init__(self, lessons):
@@ -372,7 +369,9 @@ def main(args=sys.argv[1:]):
     Main function
     """
     # parse arguments
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='Convert an XML file exported from itslearning.com to a nicely '
+                                     + 'formatted schedule, chronologically sorted.',
+                                     epilog="example: athena2xml.py input.xml  | a2ps -1 -r -l144 -o output.ps")
     parser.add_argument("infile", help="input XML filename, exported from itslearning.com -> plan -> import/export",
                         type=str)
     parser.add_argument("-v", "--verbosity", action='count', help="increase output verbosity", default=0)
@@ -381,7 +380,7 @@ def main(args=sys.argv[1:]):
     parser.add_argument("-c", "--course-code", help="Course code, e.g. FK5031", type=str)
     parser.add_argument("-n", "--course-name", help="Course name, e.g. Radiation Dosimetry", type=str)
     parser.add_argument("-i", "--iuliana-format", action='store_true',
-                        help="Iuliana style formatted xlsx file")
+                        help="output to Iuliana style formatted Excell .xlsx file")
 
     parsed_args = parser.parse_args(args)
 
